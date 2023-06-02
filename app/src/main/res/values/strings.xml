@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Small Scanner</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="descr_iv_photo_products">Photo of products</string>
+    <string name="text_btn_photo_gallery">Загрузить из галереи</string>
+    <string name="text_btn_photo_camera">Сделать фото</string>
+</resources>
