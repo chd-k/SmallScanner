@@ -1,6 +1,8 @@
 package com.asgribovskaya.smallscanner.ui.fragments
 
 import android.content.ContentValues
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -16,8 +18,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.asgribovskaya.smallscanner.R
 import com.asgribovskaya.smallscanner.databinding.FragmentPhotoBinding
 import com.asgribovskaya.smallscanner.ui.viewmodels.PhotoViewModel
+import com.asgribovskaya.smallscanner.ui.utils.PictureUtils
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
@@ -31,12 +35,12 @@ class PhotoFragment : Fragment() {
 
     private val pickPhoto =
         registerForActivityResult(PickVisualMedia()) { uri: Uri? ->
-            viewModel.updateUri(uri!!)
+            viewModel.detectInBitmap(getScaledBitmapFromUri(uri!!))
         }
 
     private val takePhoto =
         registerForActivityResult(TakePicture()) { photoTaken: Boolean ->
-            if (photoTaken) viewModel.updateUri(photoUri)
+            if (photoTaken) viewModel.detectInBitmap(getScaledBitmapFromUri(photoUri))
         }
 
     private lateinit var photoUri: Uri
@@ -54,8 +58,9 @@ class PhotoFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupAssets()
         setupListeners()
-        setUpCollectors()
+        setupCollectors()
     }
 
     override fun onDestroyView() {
@@ -88,11 +93,33 @@ class PhotoFragment : Fragment() {
         return photoUri
     }
 
-    private fun setUpCollectors() = viewLifecycleOwner.lifecycleScope.launch {
+    private fun setupCollectors() = viewLifecycleOwner.lifecycleScope.launch {
         viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
             viewModel.photo.collect { photoData ->
-                binding.ivPhotoProducts.setImageURI(photoData.uri)
+                photoData.detections?.let {
+                    val color = resources.getColor(R.color.red, null)
+                    binding.ivPhotoProducts.setImageBitmap(
+                        PictureUtils.drawBoundingBoxes(
+                            photoData,
+                            color
+                        )
+                    )
+                }
             }
         }
+    }
+
+    private fun setupAssets() {
+        viewModel.setAssetManager(requireContext().applicationContext.assets)
+    }
+
+    private fun getScaledBitmapFromUri(uri: Uri): Bitmap {
+        val resolver = requireContext().applicationContext.contentResolver
+        val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, uri))
+        } else {
+            MediaStore.Images.Media.getBitmap(resolver, uri)
+        }
+        return PictureUtils.scaleBitmap(bitmap)
     }
 }

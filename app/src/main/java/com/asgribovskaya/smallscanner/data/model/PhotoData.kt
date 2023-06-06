@@ -1,7 +1,9 @@
 package com.asgribovskaya.smallscanner.data.model
 
-import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.RectF
 
 data class PhotoData(
-    var uri: Uri? = null
+    var bitmap: Bitmap? = null,
+    var detections: List<RectF>? = null
 )
